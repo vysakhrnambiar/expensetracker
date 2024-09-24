@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Expense Tracker</title>
+    <script>
+        // Function to get cookie data
+        function getCookie(name) {
+            let cookies = document.cookie.split('; ');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].split('=');
+                if (cookie[0] === name) {
+                    return JSON.parse(decodeURIComponent(cookie[1]));
+                }
+            }
+            return [];
+        }
+
+        // Function to save cookie data
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                let date = new Date();
+                date.setTime(date.getTime() + (days*24*60*60*1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + expires + "; path=/";
+        }
+
+        // Save the bill data to cookies
+        function saveBillData() {
+            let tripName = document.getElementById('tripName').value;
+            let whoPaid = document.getElementById('whoPaid').value;
+            let amount = parseFloat(document.getElementById('amount').value);
+            let currency = document.getElementById('currency').value;
+            let conversionRate = parseFloat(document.getElementById('conversionRate').value);
+            let whoOwes = document.getElementById('whoOwes').value;
+
+            // Get existing data from cookies
+            let tripData = getCookie(tripName) || [];
+
+            // Add new bill data
+            tripData.push({
+                who_paid: whoPaid,
+                amount: amount,
+                currency: currency,
+                conversion_rate_to_inr: conversionRate,
+                who_owes: JSON.parse(whoOwes)
+            });
+
+            // Save the updated data back to cookies
+            setCookie(tripName, tripData, 7); // Save cookie for 7 days
+
+            alert('Bill added successfully!');
+        }
+
+        // Function to calculate the final settlement
+        function calculateSettlement() {
+            let tripName = document.getElementById('tripName').value;
+            let tripData = getCookie(tripName);
+
+            if (!tripData.length) {
+                alert('No data found for this trip!');
+                return;
+            }
+
+            let settlement = {};
+
+            // Loop through each bill
+            tripData.forEach(bill => {
+                let inrTotal = bill.amount * bill.conversion_rate_to_inr;
+
+                // Subtract the total from the payer's account
+                if (!settlement[bill.who_paid]) settlement[bill.who_paid] = 0;
+                settlement[bill.who_paid] -= inrTotal;
+
+                // Add each person's share (including the payer's own share if any)
+                for (let person in bill.who_owes) {
+                    if (!settlement[person]) settlement[person] = 0;
+                    settlement[person] += bill.who_owes[person] * bill.conversion_rate_to_inr;
+                }
+            });
+
+            // Display the final settlement
+            let result = "Final Settlement (in INR):\n";
+            for (let person in settlement) {
+                result += `${person}: ${settlement[person].toFixed(2)} INR\n`;
+            }
+
+            alert(result);
+        }
+
+        // Clear the cookie data
+        function clearTripData() {
+            let tripName = document.getElementById('tripName').value;
+            setCookie(tripName, [], -1);
+            alert('Trip data cleared!');
+        }
+    </script>
+</head>
+<body>
+    <h1>Trip Expense Tracker</h1>
+
+    <!-- Form to input bill data -->
+    <form onsubmit="saveBillData(); return false;">
+        <label for="tripName">Trip Name:</label>
+        <input type="text" id="tripName" required><br><br>
+
+        <label for="whoPaid">Who Paid:</label>
+        <input type="text" id="whoPaid" required><br><br>
+
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" required><br><br>
+
+        <label for="currency">Currency:</label>
+        <input type="text" id="currency" required><br><br>
+
+        <label for="conversionRate">Conversion Rate to INR:</label>
+        <input type="number" id="conversionRate" step="0.01" required><br><br>
+
+        <label for="whoOwes">Who Owes (JSON format):</label>
+        <textarea id="whoOwes" required>{"Friend A": 30, "Friend B": 50, "Friend C": 20}</textarea><br><br>
+
+        <button type="submit">Add Bill</button>
+    </form>
+
+    <br>
+    <!-- Buttons for calculating and clearing trip data -->
+    <button onclick="calculateSettlement()">Calculate Final Settlement</button>
+    <button onclick="clearTripData()">Clear Trip Data</button>
+</body>
+</html>
