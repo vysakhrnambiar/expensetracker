@@ -4,8 +4,201 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trip Expense Tracker</title>
+    <style>
+        /* Modern CSS Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="number"], select, textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            align-self: flex-start;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .friends-section, .bills-section, .tally-section, .export-section {
+            margin-top: 30px;
+        }
+
+        .friends-list, .bills-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .friends-list li, .bills-list li {
+            background-color: #f1f1f1;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trip Expense Tracker</h1>
+
+        <!-- Initial Setup Section -->
+        <div id="initialSetup" class="initial-setup">
+            <h2>Setup Your Trip</h2>
+            <form id="setupForm">
+                <label for="tripName">Trip Name:</label>
+                <input type="text" id="tripName" required>
+
+                <label for="friendName">Add Friend:</label>
+                <input type="text" id="friendName" placeholder="Friend's Name">
+                <button type="button" onclick="addFriend()">Add Friend</button>
+
+                <h3>Friends on this Trip:</h3>
+                <ul id="friendsList" class="friends-list"></ul>
+
+                <button type="submit">Start Trip</button>
+            </form>
+        </div>
+
+        <!-- Main Interface Section -->
+        <div id="mainInterface" class="hidden">
+            <!-- Add Bill Section -->
+            <div class="bills-section">
+                <h2>Add Bill</h2>
+                <form id="billForm">
+                    <label for="whoPaid">Who Paid:</label>
+                    <select id="whoPaid" required></select>
+
+                    <label for="amount">Amount:</label>
+                    <input type="number" id="amount" step="0.01" required>
+
+                    <label for="currency">Currency:</label>
+                    <input type="text" id="currency" required>
+
+                    <label for="conversionRate">Conversion Rate to INR:</label>
+                    <input type="number" id="conversionRate" step="0.01" required>
+
+                    <div id="owesSection">
+                        <label>Who Owes:</label>
+                        <div id="owesFields"></div>
+                    </div>
+
+                    <button type="submit">Add Bill</button>
+                </form>
+            </div>
+
+            <!-- Display All Bills -->
+            <div class="bills-section">
+                <h2>All Added Bills</h2>
+                <ul id="allBills" class="bills-list"></ul>
+            </div>
+
+            <!-- Tally Section -->
+            <div class="tally-section">
+                <h2>Settlement Tally</h2>
+                <table id="tallyTable">
+                    <thead>
+                        <tr>
+                            <th>Friend</th>
+                            <th>Total Owes (INR)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Tally rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section">
+                <h2>Export Data</h2>
+                <button onclick="exportToExcel()">Export to Excel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Function to get cookie data
+        // JavaScript for Trip Expense Tracker
+
+        // Utility Functions for Cookies
         function getCookie(name) {
             let cookies = document.cookie.split('; ');
             for (let i = 0; i < cookies.length; i++) {
@@ -14,10 +207,9 @@
                     return JSON.parse(decodeURIComponent(cookie[1]));
                 }
             }
-            return [];
+            return null;
         }
 
-        // Function to save cookie data
         function setCookie(name, value, days) {
             let expires = "";
             if (days) {
@@ -28,106 +220,275 @@
             document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + expires + "; path=/";
         }
 
-        // Save the bill data to cookies
-        function saveBillData() {
-            let tripName = document.getElementById('tripName').value;
+        // Initialization on Page Load
+        window.onload = function() {
+            let tripData = getCookie('tripData');
+            if (tripData && tripData.tripName && tripData.friends.length > 0) {
+                document.getElementById('initialSetup').classList.add('hidden');
+                document.getElementById('mainInterface').classList.remove('hidden');
+                populateFriendsDropdown();
+                populateOwesFields();
+                displayAllBills();
+                updateTally();
+            } else {
+                document.getElementById('initialSetup').classList.remove('hidden');
+                document.getElementById('mainInterface').classList.add('hidden');
+            }
+        }
+
+        // Setup Form Submission
+        document.getElementById('setupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let tripName = document.getElementById('tripName').value.trim();
+            if (tripName === "") {
+                alert("Please enter a trip name.");
+                return;
+            }
+
+            let tripData = {
+                tripName: tripName,
+                friends: friends,
+                bills: []
+            };
+
+            setCookie('tripData', tripData, 7);
+            document.getElementById('initialSetup').classList.add('hidden');
+            document.getElementById('mainInterface').classList.remove('hidden');
+            populateFriendsDropdown();
+            populateOwesFields();
+            displayAllBills();
+            updateTally();
+        });
+
+        // Friends Management
+        let friends = [];
+
+        function addFriend() {
+            let friendName = document.getElementById('friendName').value.trim();
+            if (friendName === "") {
+                alert("Please enter a friend's name.");
+                return;
+            }
+            if (friends.includes(friendName)) {
+                alert("This friend is already added.");
+                return;
+            }
+            friends.push(friendName);
+            document.getElementById('friendsList').innerHTML += `<li>${friendName}</li>`;
+            document.getElementById('friendName').value = "";
+        }
+
+        // Populate Payer Dropdown
+        function populateFriendsDropdown() {
+            let tripData = getCookie('tripData');
+            if (!tripData) return;
+
+            let whoPaidSelect = document.getElementById('whoPaid');
+            whoPaidSelect.innerHTML = "";
+            tripData.friends.forEach(friend => {
+                let option = document.createElement('option');
+                option.value = friend;
+                option.text = friend;
+                whoPaidSelect.add(option);
+            });
+        }
+
+        // Populate Owes Fields
+        function populateOwesFields() {
+            let tripData = getCookie('tripData');
+            if (!tripData) return;
+
+            let owesFieldsDiv = document.getElementById('owesFields');
+            owesFieldsDiv.innerHTML = "";
+            tripData.friends.forEach(friend => {
+                let field = document.createElement('div');
+                field.style.marginBottom = '10px';
+                field.innerHTML = `
+                    <label for="owe_${friend}">${friend} Owes (INR):</label>
+                    <input type="number" id="owe_${friend}" step="0.01" min="0" value="0">
+                `;
+                owesFieldsDiv.appendChild(field);
+            });
+        }
+
+        // Bill Form Submission
+        document.getElementById('billForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let tripData = getCookie('tripData');
+            if (!tripData) {
+                alert("Trip data not found.");
+                return;
+            }
+
             let whoPaid = document.getElementById('whoPaid').value;
             let amount = parseFloat(document.getElementById('amount').value);
-            let currency = document.getElementById('currency').value;
+            let currency = document.getElementById('currency').value.trim().toUpperCase();
             let conversionRate = parseFloat(document.getElementById('conversionRate').value);
-            let whoOwes = document.getElementById('whoOwes').value;
 
-            // Get existing data from cookies
-            let tripData = getCookie(tripName) || [];
+            if (isNaN(amount) || isNaN(conversionRate)) {
+                alert("Please enter valid numerical values for amount and conversion rate.");
+                return;
+            }
 
-            // Add new bill data
-            tripData.push({
+            // Collect who owes how much
+            let whoOwes = {};
+            tripData.friends.forEach(friend => {
+                let oweAmount = parseFloat(document.getElementById(`owe_${friend}`).value);
+                if (!isNaN(oweAmount) && oweAmount > 0) {
+                    whoOwes[friend] = oweAmount;
+                }
+            });
+
+            if (Object.keys(whoOwes).length === 0) {
+                alert("Please specify at least one person who owes.");
+                return;
+            }
+
+            // Create bill object
+            let bill = {
                 who_paid: whoPaid,
                 amount: amount,
                 currency: currency,
                 conversion_rate_to_inr: conversionRate,
-                who_owes: JSON.parse(whoOwes)
+                who_owes: whoOwes
+            };
+
+            // Add bill to trip data
+            tripData.bills.push(bill);
+            setCookie('tripData', tripData, 7);
+
+            // Reset form
+            document.getElementById('billForm').reset();
+            populateOwesFields();
+
+            // Update UI
+            displayAllBills();
+            updateTally();
+        });
+
+        // Display All Bills
+        function displayAllBills() {
+            let tripData = getCookie('tripData');
+            if (!tripData) return;
+
+            let allBillsDiv = document.getElementById('allBills');
+            allBillsDiv.innerHTML = "";
+
+            tripData.bills.forEach((bill, index) => {
+                let owesText = "";
+                for (let person in bill.who_owes) {
+                    owesText += `${person}: ₹${bill.who_owes[person].toFixed(2)}, `;
+                }
+                owesText = owesText.slice(0, -2); // Remove trailing comma and space
+
+                let billItem = document.createElement('li');
+                billItem.innerHTML = `
+                    <strong>Bill ${index + 1}:</strong> Paid by <strong>${bill.who_paid}</strong>, 
+                    Amount: <strong>${bill.amount} ${bill.currency}</strong>, 
+                    Conversion Rate: <strong>${bill.conversion_rate_to_inr}</strong>, 
+                    Who Owes: <em>${owesText}</em>
+                `;
+                allBillsDiv.appendChild(billItem);
             });
-
-            // Save the updated data back to cookies
-            setCookie(tripName, tripData, 7); // Save cookie for 7 days
-
-            alert('Bill added successfully!');
         }
 
-        // Function to calculate the final settlement
-        function calculateSettlement() {
-            let tripName = document.getElementById('tripName').value;
-            let tripData = getCookie(tripName);
-
-            if (!tripData.length) {
-                alert('No data found for this trip!');
-                return;
-            }
+        // Update Tally Table
+        function updateTally() {
+            let tripData = getCookie('tripData');
+            if (!tripData) return;
 
             let settlement = {};
 
-            // Loop through each bill
-            tripData.forEach(bill => {
-                let inrTotal = bill.amount * bill.conversion_rate_to_inr;
+            // Initialize settlement
+            tripData.friends.forEach(friend => {
+                settlement[friend] = 0;
+            });
 
-                // Subtract the total from the payer's account
-                if (!settlement[bill.who_paid]) settlement[bill.who_paid] = 0;
+            // Calculate settlement
+            tripData.bills.forEach(bill => {
+                let inrTotal = bill.amount * bill.conversion_rate_to_inr;
                 settlement[bill.who_paid] -= inrTotal;
 
-                // Add each person's share (including the payer's own share if any)
                 for (let person in bill.who_owes) {
-                    if (!settlement[person]) settlement[person] = 0;
-                    settlement[person] += bill.who_owes[person] * bill.conversion_rate_to_inr;
+                    settlement[person] += bill.who_owes[person];
                 }
             });
 
-            // Display the final settlement
-            let result = "Final Settlement (in INR):\n";
-            for (let person in settlement) {
-                result += `${person}: ${settlement[person].toFixed(2)} INR\n`;
+            // Populate tally table
+            let tallyTableBody = document.getElementById('tallyTable').getElementsByTagName('tbody')[0];
+            tallyTableBody.innerHTML = "";
+
+            for (let friend in settlement) {
+                let row = tallyTableBody.insertRow();
+                let cellName = row.insertCell(0);
+                let cellAmount = row.insertCell(1);
+                cellName.innerHTML = friend;
+                cellAmount.innerHTML = settlement[friend].toFixed(2);
+            }
+        }
+
+        // Export to Excel Functionality
+        function exportToExcel() {
+            let tripData = getCookie('tripData');
+            if (!tripData) {
+                alert("No trip data to export.");
+                return;
             }
 
-            alert(result);
-        }
+            // Prepare CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Bill No,Who Paid,Amount,Currency,Conversion Rate,Who Owes\n";
 
-        // Clear the cookie data
-        function clearTripData() {
-            let tripName = document.getElementById('tripName').value;
-            setCookie(tripName, [], -1);
-            alert('Trip data cleared!');
+            tripData.bills.forEach((bill, index) => {
+                let owes = "";
+                for (let person in bill.who_owes) {
+                    owes += `${person}: ${bill.who_owes[person].toFixed(2)} INR; `;
+                }
+                owes = owes.slice(0, -2); // Remove trailing semicolon and space
+
+                let row = [
+                    index + 1,
+                    bill.who_paid,
+                    bill.amount,
+                    bill.currency,
+                    bill.conversion_rate_to_inr,
+                    owes
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            // Add Tally Section
+            csvContent += "\nSettlement Tally\nFriend,Total Owes (INR)\n";
+
+            let settlement = {};
+            tripData.friends.forEach(friend => {
+                settlement[friend] = 0;
+            });
+
+            tripData.bills.forEach(bill => {
+                let inrTotal = bill.amount * bill.conversion_rate_to_inr;
+                settlement[bill.who_paid] -= inrTotal;
+
+                for (let person in bill.who_owes) {
+                    settlement[person] += bill.who_owes[person];
+                }
+            });
+
+            for (let friend in settlement) {
+                let row = `${friend},${settlement[friend].toFixed(2)}`;
+                csvContent += row + "\n";
+            }
+
+            // Create a downloadable link
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${tripData.tripName}_Expenses.csv`);
+            document.body.appendChild(link); // Required for FF
+
+            link.click(); // This will download the data file named "trip_expenses.csv"
+            document.body.removeChild(link);
         }
     </script>
-</head>
-<body>
-    <h1>Trip Expense Tracker</h1>
-
-    <!-- Form to input bill data -->
-    <form onsubmit="saveBillData(); return false;">
-        <label for="tripName">Trip Name:</label>
-        <input type="text" id="tripName" required><br><br>
-
-        <label for="whoPaid">Who Paid:</label>
-        <input type="text" id="whoPaid" required><br><br>
-
-        <label for="amount">Amount:</label>
-        <input type="number" id="amount" required><br><br>
-
-        <label for="currency">Currency:</label>
-        <input type="text" id="currency" required><br><br>
-
-        <label for="conversionRate">Conversion Rate to INR:</label>
-        <input type="number" id="conversionRate" step="0.01" required><br><br>
-
-        <label for="whoOwes">Who Owes (JSON format):</label>
-        <textarea id="whoOwes" required>{"Friend A": 30, "Friend B": 50, "Friend C": 20}</textarea><br><br>
-
-        <button type="submit">Add Bill</button>
-    </form>
-
-    <br>
-    <!-- Buttons for calculating and clearing trip data -->
-    <button onclick="calculateSettlement()">Calculate Final Settlement</button>
-    <button onclick="clearTripData()">Clear Trip Data</button>
 </body>
 </html>
