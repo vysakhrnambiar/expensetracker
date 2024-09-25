@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the latest code from the repository
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # Deploy the contents of the repository (your HTML files) to GitHub Pages
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for authentication
-        publish_dir: ./  # This assumes your HTML files are in the root of the repository
+      # Step 2: Deploy the contents of the repository (your HTML files) to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4  # Updated to v4 for Node.js 20 compatibility
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # GitHub token for authentication
+          publish_branch: gh-pages  # Use a dedicated branch for GitHub Pages
+          publish_dir: ./  # Directory to deploy (your HTML files should be here)
