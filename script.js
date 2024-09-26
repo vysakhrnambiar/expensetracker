@@ -29,6 +29,8 @@ window.onload = function () {
         document.getElementById('mainInterface').classList.add('hidden');
     }
      showMicIconIfApiKeyExists();
+     hideLoadingSpinner();
+
 }
 
 // Setup Form Submission
@@ -476,7 +478,7 @@ function handleVoiceInput(audioBlob) {
         alert("No OpenAI API key found. Please provide the key.");
         return;
     }
-
+     showLoadingSpinner();
     const formData = new FormData();
     formData.append('file', audioBlob, 'voice_input.wav');  // The captured audio file blob
     formData.append('model', 'whisper-1'); 
@@ -494,8 +496,10 @@ function handleVoiceInput(audioBlob) {
         const transcription = data.text;
         console.log("Transcription:", transcription);
         processTranscriptionForBill(transcription);  // Process the transcription
+        hideLoadingSpinner();
     })
     .catch(error => {
+        hideLoadingSpinner();
         console.error("Error in Whisper API:", error);
     });
 }
@@ -786,3 +790,20 @@ document.getElementById('apiKeyButton').addEventListener('click', handleApiKeyBu
 
 // Call the function to set the initial button text when the page loads
 updateApiKeyButton();
+
+
+// Function to show the loading spinner
+function showLoadingSpinner() {
+    console.log('Showing spinner');
+    const spinner = document.getElementById('loadingSpinner');
+    spinner.classList.remove('hidden'); // Try to remove the 'hidden' class
+    spinner.style.display = 'flex'; // Force the display to 'flex'
+}
+
+// Function to hide the loading spinner
+function hideLoadingSpinner() {
+    console.log('Hiding spinner');
+    const spinner = document.getElementById('loadingSpinner');
+    spinner.classList.add('hidden'); // Try to add the 'hidden' class
+    spinner.style.display = 'none'; // Force the display to 'none'
+}
