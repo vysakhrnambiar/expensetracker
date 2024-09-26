@@ -18,20 +18,39 @@ window.onload = function () {
     let tripData = getLocalStorage('tripData');
     if (tripData && tripData.tripName && tripData.friends.length > 0) {
         console.log('Trip Data Loaded:', tripData);
-        document.getElementById('initialSetup').classList.add('hidden');
-        document.getElementById('mainInterface').classList.remove('hidden');
+     const initialSetup = document.getElementById('initialSetup');
+        const mainInterface = document.getElementById('mainInterface');
+        
+        initialSetup.classList.add('hidden');
+        initialSetup.style.display = 'none'; // Ensure it's fully hidden
+
+        mainInterface.classList.remove('hidden');
+        mainInterface.style.display = 'block'; // Ensure it's visible
+
+
         populateFriendsDropdown(tripData);
         displayAllBills();
         updateTally();
     } else {
         console.log('No Trip Data Found. Starting new trip.');
-        document.getElementById('initialSetup').classList.remove('hidden');
-        document.getElementById('mainInterface').classList.add('hidden');
+  
+        // Show initial setup and hide the main interface
+        const initialSetup = document.getElementById('initialSetup');
+        const mainInterface = document.getElementById('mainInterface');
+        
+        initialSetup.classList.remove('hidden');
+        initialSetup.style.display = 'block'; // Ensure it's visible
+
+        mainInterface.classList.add('hidden');
+        mainInterface.style.display = 'none';
+
     }
      showMicIconIfApiKeyExists();
      hideLoadingSpinner();
 
 }
+
+
 
 // Setup Form Submission
 document.getElementById('setupForm').addEventListener('submit', function (e) {
@@ -238,11 +257,12 @@ function displayAllBills() {
 
         let billItem = document.createElement('li');
         billItem.innerHTML = `
-            <strong>Bill ${index + 1}:</strong> Paid by <strong>${bill.who_paid}</strong>, 
-            Amount: <strong>${bill.amount} ${bill.currency}</strong>, 
-            Conversion Rate: <strong>${bill.conversion_rate_to_inr}</strong>, 
-            Total INR: <strong>₹${bill.total_inr}</strong>, 
-            Who Owes: <em>${owesText}</em>
+            <strong>Bill ${index + 1}</strong>
+            <p><strong>Paid by:</strong> ${bill.who_paid}</p>
+            <p><strong>Amount:</strong> ${bill.amount} ${bill.currency}</p>
+            <p><strong>Conversion Rate:</strong> ₹${bill.conversion_rate_to_inr}</p>
+            <p><strong>Total INR:</strong> ₹${bill.total_inr.toFixed(2)}</p>
+            <p><strong>Who Owes:</strong> <em>${owesText}</em></p>
             <button onclick="deleteBill(${index})">Delete Bill</button>
         `;
         allBillsDiv.appendChild(billItem);
@@ -518,37 +538,40 @@ function processTranscriptionForBill(transcription) {
 
     // Construct the chat prompt
     const prompt = `Extract the following details as a JSON object from the text: 
-                    "Who paid, how much, currency, conversion rate, equal split or % split, 
-                    if % split, who owes what percent." Text: "${transcription}"
+    "Who paid, how much, currency, conversion rate, equal split or % split, 
+    if % split, who owes what percent." 
+    Text: "${transcription}"
 
-                    If the split is equal or even always return as equal.
-                    If split is %/percentage  your output for that field will be percentage
+    Always return the split as "equal" or "percentage". 
+    If it’s a percentage split, include the split details for each individual.
+    
+    Example 1 (equal):
+    {
+        "WhoPaid": "Thomas John",
+        "Amount": 52,
+        "Currency": "USD",
+        "ConversionRate": 83,
+        "SplitType": "equal"
+    }
 
-                       Example output 1 : 
-                        WhoPaid : Thomas Jhon
-                        Amount :  52  
-                        Currency :  USD
-                        ConversionRate : 83 
-                        Splittype :  equal
+    Example 2 (percentage):
+    {
+        "WhoPaid": "Thomas John",
+        "Amount": 52,
+        "Currency": "USD",
+        "ConversionRate": 83,
+        "SplitType": "percentage",
+        "SplitDetails": {
+            "Thomas John": 20,
+            "Mathew": 20,
+            "Jerry": 30,
+            "Adam": 30
+        }
+    }
+    Ensure the currency is always returned as a valid 3-letter ISO 4217 code.
 
-                         Example output 2 : 
-                        WhoPaid : Thomas Jhon
-                        Amount :  52  
-                        Currency :  USD
-                        ConversionRate : 83 
-                        Splittype :  percentage",
-                        SplitDetails:{
-                        Thomas Jhon: 20%,
-                        Mathew : 20%,
-                        Jerry : 30%,
-                        Adam : 30%
-
-                        Output will be only the JSON
-                    }
-  
-
-
-                        `;
+    Your response should only be a JSON object, no additional text. All fields are mandatory if data not available you can insert null. If Currency is INR conversionRate : 1
+    `;
 
     fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -557,7 +580,7 @@ function processTranscriptionForBill(transcription) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'gpt-4',  // Specify the GPT model
+            model: 'gpt-4',  // Specify the correct GPT model
             messages: [
                 { role: 'system', content: 'You are a helpful assistant.' },
                 { role: 'user', content: prompt }
@@ -571,7 +594,9 @@ function processTranscriptionForBill(transcription) {
         const billDetails = data.choices[0].message.content.trim();
         console.log("Extracted Bill Data:", billDetails);
         try {
-            const billData = JSON.parse(billDetails);  // Parse the JSON response
+            // Ensure it's valid JSON
+            const billData = JSON.parse(billDetails);
+            
             // Validate if all required fields are present
             if (validateBillData(billData)) {
                 createBillFromVoiceInput(billData);  // Pass the data to a function to create a bill
@@ -594,9 +619,28 @@ function processTranscriptionForBill(transcription) {
 // Function to validate extracted bill data
 function validateBillData(billData) {
     // Check if required fields are present
-    if (!billData.WhoPaid || !billData.Amount || !billData.Currency || !billData.ConversionRate || !billData.SplitType) {
-        return false;  // If any of these required fields are missing, return false
+    const requiredFields = ['WhoPaid', 'Amount', 'Currency', 'ConversionRate', 'SplitType'];
+    for (let field of requiredFields) {
+        if (!billData[field]) {
+            console.error(`Missing field: ${field}`);
+            return false; // Return false if any required field is missing
+        }
     }
+
+ // Validate Splittype
+    if (billData.Splittype === 'percentage') {
+        if (!billData.SplitDetails || Object.keys(billData.SplitDetails).length === 0) {
+            console.error('Splittype is percentage, but no SplitDetails found.');
+            return false; // Invalid if percentage and SplitDetails is empty
+        }
+    } else if (billData.Splittype === 'equal') {
+        // Allow SplitDetails to be null or not present for equal splits
+        if (billData.SplitDetails !== null) {
+            console.warn('SplitDetails should be null for equal splits.');
+        }
+    }
+
+
 
     // Normalize the SplitType (handle "even" as a valid value for "equal")
     const normalizedSplitType = billData.SplitType.toLowerCase();
