@@ -237,7 +237,7 @@ function displayAllBills() {
         let billItem = document.createElement('li');
         billItem.innerHTML = `
             <strong>Bill ${index + 1}:</strong> Paid by <strong>${bill.who_paid}</strong>, 
-            Amount: <strong>${bill.amount} USD</strong>, 
+            Amount: <strong>${bill.amount} ${bill.currency}</strong>, 
             Conversion Rate: <strong>${bill.conversion_rate_to_inr}</strong>, 
             Total INR: <strong>₹${bill.total_inr}</strong>, 
             Who Owes: <em>${owesText}</em>
