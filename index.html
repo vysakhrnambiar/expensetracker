@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+     <!-- Loading Spinner (hidden initially) -->
+<div id="loadingSpinner" class="hidden">
+    <div class="spinner"></div>
+    <p>Processing... Please wait</p>
+</div>
+
     <div class="container">
         <h1>Trip Expense Tracker</h1>
 
@@ -44,8 +51,11 @@
 <!-- Button to Store API Key -->
 <button id="apiKeyButton">Set OpenAI Key</button>
 
+
             <!-- Add Bill Section -->
             <div class="bills-section">
+
+
                 <h2>Add Bill</h2>
                 <form id="billForm">
                     <label for="whoPaid">Who Paid:</label>
