@@ -123,4 +123,80 @@ td {
 }
 
 .hidden {
-    displa
+    display: none;
+}
+
+/* Loading Spinner Container */
+#loadingSpinner {
+    display: none; /* Initially hidden */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8); /* Slightly opaque background */
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #333;
+}
+
+/* Spinner Animation */
+.spinner {
+    border: 8px solid #f3f3f3; /* Light gray background for the spinner */
+    border-top: 8px solid #3498db; /* Blue color for the moving part */
+    border-radius: 50%;
+    width: 60px; /* Increased size for better visibility */
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px; /* Space between spinner and text */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Spinner Text */
+#loadingSpinner p {
+    color: #2c3e50; /* Darker text color */
+    font-size: 18px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+        margin: 20px;
+    }
+
+    h1, h2, h3 {
+        font-size: 20px;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    button {
+        width: 100%;
+        font-size: 16px;
+        padding: 10px;
+    }
+
+    table, th, td {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .friends-list li, .bills-list li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
