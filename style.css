@@ -1,7 +1,7 @@
 /* Modern and Vibrant CSS Styling */
 body {
-    font-family: 'Roboto', sans-serif; /* Use a modern sans-serif font */
-    background-color: #f0f4f8; /* Lighter background for a clean look */
+    font-family: 'Roboto', sans-serif; /* Modern sans-serif font */
+    background-color: #f0f4f8;
     margin: 0;
     padding: 0;
 }
@@ -12,12 +12,12 @@ body {
     background-color: #ffffff;
     padding: 40px;
     border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Softer shadow for modern look */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 h1, h2, h3 {
     text-align: center;
-    color: #2c3e50; /* Darker color for headings */
+    color: #2c3e50;
     font-weight: 700;
     margin-bottom: 20px;
 }
@@ -30,7 +30,7 @@ form {
 
 label {
     font-weight: 500;
-    color: #34495e; /* Use consistent text color */
+    color: #34495e;
 }
 
 input[type="text"], input[type="number"], select, textarea {
@@ -39,35 +39,35 @@ input[type="text"], input[type="number"], select, textarea {
     border-radius: 8px;
     width: 100%;
     box-sizing: border-box;
-    transition: border-color 0.3s ease; /* Smooth transition on hover */
+    transition: border-color 0.3s ease;
     font-size: 16px;
 }
 
 input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
-    border-color: #3498db; /* Blue border on focus */
+    border-color: #3498db;
     outline: none;
 }
 
 textarea {
     resize: vertical;
-    height: 100px; /* Slightly larger text area */
+    height: 100px;
 }
 
 button {
     padding: 12px 24px;
-    background-color: #3498db; /* Vibrant blue */
+    background-color: #3498db;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover effects */
+    transition: background-color 0.3s ease, transform 0.2s ease;
     align-self: flex-start;
 }
 
 button:hover {
-    background-color: #2980b9; /* Darker shade on hover */
-    transform: translateY(-3px); /* Slight lift on hover */
+    background-color: #2980b9;
+    transform: translateY(-3px);
 }
 
 .friends-section, .bills-section, .tally-section, .export-section {
@@ -80,11 +80,11 @@ button:hover {
 }
 
 .friends-list li, .bills-list li {
-    background-color: #ecf0f1; /* Light gray for list items */
+    background-color: #ecf0f1;
     margin: 8px 0;
     padding: 14px;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -92,14 +92,14 @@ button:hover {
 }
 
 .friends-list li:hover, .bills-list li:hover {
-    background-color: #dfe6e9; /* Slight hover effect */
+    background-color: #dfe6e9;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* Subtle table shadow */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 table, th, td {
@@ -119,56 +119,8 @@ th {
 }
 
 td {
-    background-color: #f9f9f9; /* Light background for table rows */
+    background-color: #f9f9f9;
 }
 
 .hidden {
-    display: none;
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-    .container {
-        padding: 20px;
-    }
-
-    button {
-        width: 100%;
-        font-size: 18px;
-    }
-}
-
-/* Loading Spinner CSS */
-.spinner {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid #3498db;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-#loadingSpinner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.8);
-    z-index: 9999;
-    font-size: 18px;
-    color: #333;
-}
-.hidden {
-    display: none;
-}
+    displa
