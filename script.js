@@ -538,6 +538,8 @@ function processTranscriptionForBill(transcription) {
                         Mathew : 20%,
                         Jerry : 30%,
                         Adam : 30%
+
+                        Output will be only the JSON
                     }
   
 
@@ -738,7 +740,49 @@ function createBillFromVoiceInput(billData) {
         tripData.bills.push(newBill);  // Add the bill to the stored trip data
         setLocalStorage('tripData', tripData);  // Save the updated trip data
         alert('Bill has been added successfully!');
+        displayAllBills();
     } else {
         alert('Bill addition canceled.');
     }
 }
+
+// Function to check if the OpenAI API key is set and update the button accordingly
+function updateApiKeyButton() {
+    const apiKeyButton = document.getElementById('apiKeyButton');
+    const storedApiKey = localStorage.getItem('openai_api_key');
+
+    if (storedApiKey) {
+        apiKeyButton.textContent = "Clear OpenAI Key";
+    } else {
+        apiKeyButton.textContent = "Set OpenAI Key";
+    }
+}
+
+// Function to handle setting or clearing the OpenAI API key
+function handleApiKeyButtonClick() {
+    const storedApiKey = localStorage.getItem('openai_api_key');
+
+    if (storedApiKey) {
+        // If the key is already set, clear it
+        if (confirm("Are you sure you want to clear the OpenAI API key?")) {
+            localStorage.removeItem('openai_api_key');
+            alert("OpenAI API key has been cleared.");
+        }
+    } else {
+        // If no key is set, prompt the user to enter the key
+        const newApiKey = prompt("Please enter your OpenAI API key:");
+        if (newApiKey) {
+            localStorage.setItem('openai_api_key', newApiKey);
+            alert("OpenAI API key has been set.");
+        }
+    }
+
+    // Update the button text based on the new state
+    updateApiKeyButton();
+}
+
+// Attach the handleApiKeyButtonClick function to the button
+document.getElementById('apiKeyButton').addEventListener('click', handleApiKeyButtonClick);
+
+// Call the function to set the initial button text when the page loads
+updateApiKeyButton();
