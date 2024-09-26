@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Trip Expense Tracker</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -34,6 +33,18 @@
 
                 <button onclick="clearTripData()">Clear Trip Data</button>
 
+                <!-- Add Mic Icon for Voice Input -->
+<!-- Mic Icon for Voice Input (Start/Stop Button) -->
+<button id="micIcon" style="display: none; background-color: ''; padding: 10px 20px; border-radius: 5px;">
+    🎤 Start Recording
+</button>
+
+
+
+<!-- Button to Store API Key -->
+<button onclick="storeApiKey()">Set OpenAI API Key</button>
+
+
             <!-- Add Bill Section -->
             <div class="bills-section">
                 <h2>Add Bill</h2>
@@ -61,7 +72,9 @@
                         <div id="owesFields"></div>
                     </div>
 
+
                     <button type="submit">Add Bill</button>
+                      <button type="button" id="clearButton">Clear All</button>
                 </form>
             </div>
 
