@@ -1,6 +1,10 @@
 // Utility Functions for Local Storage
+
+
 function getLocalStorage(key) {
     let data = localStorage.getItem(key);
+    console.log('Stored Trip Data:', data);
+
     return data ? JSON.parse(data) : null;
 }
 
@@ -24,6 +28,7 @@ window.onload = function () {
         document.getElementById('initialSetup').classList.remove('hidden');
         document.getElementById('mainInterface').classList.add('hidden');
     }
+     showMicIconIfApiKeyExists();
 }
 
 // Setup Form Submission
@@ -37,7 +42,7 @@ document.getElementById('setupForm').addEventListener('submit', function (e) {
 
     let tripData = {
         tripName: tripName,
-        friends: friends,
+        friends: friends.length > 0 ? friends : [],  // Ensure friends are initialize
         bills: []
     };
 
@@ -150,7 +155,16 @@ document.getElementById('billForm').addEventListener('submit', function (e) {
 
     let whoPaid = document.getElementById('whoPaid').value;
     let amount = parseFloat(document.getElementById('amount').value); // Amount in USD
+     let currency = document.getElementById('currency').value; // Get currency from input
     let conversionRate = parseFloat(document.getElementById('conversionRate').value); // Conversion rate USD to INR
+
+
+
+  if (!currency || !amount || !conversionRate) {
+        alert("Please ensure all fields (Amount, Currency, Conversion Rate) are filled.");
+        return;
+    }
+
 
     let totalINR = amount * conversionRate;  // Convert total amount to INR
     console.log(`Total Amount in INR: ₹${totalINR}`);
@@ -185,7 +199,7 @@ document.getElementById('billForm').addEventListener('submit', function (e) {
     let bill = {
         who_paid: whoPaid,
         amount: amount, // Original amount in USD
-        currency: 'USD',
+        currency: currency, // Use dynamic currency
         conversion_rate_to_inr: conversionRate,
         total_inr: totalINR, // Store the converted INR amount
         who_owes: whoOwes
@@ -362,4 +376,369 @@ function exportToExcel() {
 
     link.click(); // This will download the data file named "trip_expenses.csv"
     document.body.removeChild(link);
+}
+
+
+// Function to collect and store OpenAI API key in Local Storage
+function storeApiKey() {
+    const apiKey = prompt("Please enter your OpenAI API key:");
+    if (apiKey) {
+        localStorage.setItem('openai_api_key', apiKey);
+        alert("API Key saved successfully!");
+        showMicIconIfApiKeyExists();  // Call function to show the mic icon if API key exists
+    } else {
+        alert("API Key not provided!");
+    }
+}
+
+// Function to check if the API key exists and show mic icon
+function showMicIconIfApiKeyExists() {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (apiKey) {
+        document.getElementById('micIcon').style.display = 'inline';  // Show mic icon
+    }
+}
+
+// Call this function on page load to check if API key is already stored
+
+
+let mediaRecorder;  // To handle audio recording
+let audioChunks = [];  // To store recorded audio chunks
+let isRecording = false;  // Track recording state
+let mediaStream;  // To hold the media stream
+
+// Function to start recording audio from the microphone
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            mediaStream = stream;  // Store the media stream to stop later
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];  // Clear any previous audio chunks
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);  // Collect audio data chunks
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });  // Create blob from audio chunks
+                handleVoiceInput(audioBlob);  // Pass the audio blob to Whisper API
+            };
+
+            mediaRecorder.start();  // Start recording
+            console.log('Recording started...');
+            updateMicButtonState(true);  // Update button to indicate recording is active
+        })
+        .catch(error => {
+            console.error('Error accessing microphone:', error);
+        });
+}
+
+// Function to stop recording audio
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();  // Stop recording
+        console.log('Recording stopped...');
+
+        // Stop all tracks in the media stream to release the microphone
+        mediaStream.getTracks().forEach(track => track.stop());
+        console.log('Microphone access stopped.');
+
+        updateMicButtonState(false);  // Update button to indicate recording is stopped
+    }
+}
+
+// Function to toggle recording state when the button is clicked
+function toggleRecording() {
+    if (!isRecording) {
+        startRecording();
+    } else {
+        stopRecording();
+    }
+}
+
+// Function to update the button's appearance and state
+function updateMicButtonState(isRecordingState) {
+    const micButton = document.getElementById('micIcon');
+    if (isRecordingState) {
+        micButton.textContent = "🔴 Stop Recording";  // Change button text
+        micButton.style.backgroundColor = "red";  // Change button color to red
+    } else {
+        micButton.textContent = "🎤 Start Recording";  // Change button text
+        micButton.style.backgroundColor = "";  // Reset button color to default
+    }
+    isRecording = isRecordingState;  // Update recording state
+}
+
+// Function to handle voice input and send the audio to Whisper API
+function handleVoiceInput(audioBlob) {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        alert("No OpenAI API key found. Please provide the key.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'voice_input.wav');  // The captured audio file blob
+    formData.append('model', 'whisper-1'); 
+    formData.append('language', 'en');   // The Whisper model
+
+    fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`  // Adding Bearer token
+        },
+        body: formData  // Sending form data with audio file and model
+    })
+    .then(response => response.json())
+    .then(data => {
+        const transcription = data.text;
+        console.log("Transcription:", transcription);
+        processTranscriptionForBill(transcription);  // Process the transcription
+    })
+    .catch(error => {
+        console.error("Error in Whisper API:", error);
+    });
+}
+
+// Attach the toggleRecording function to the mic button
+document.getElementById('micIcon').addEventListener('click', toggleRecording);
+
+
+// Function to process transcription and extract bill details
+function processTranscriptionForBill(transcription) {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+        alert("No OpenAI API key found. Please provide the key.");
+        return;
+    }
+
+    // Construct the chat prompt
+    const prompt = `Extract the following details as a JSON object from the text: 
+                    "Who paid, how much, currency, conversion rate, equal split or % split, 
+                    if % split, who owes what percent." Text: "${transcription}"
+
+                    If the split is equal or even always return as equal.
+                    If split is %/percentage  your output for that field will be percentage
+
+                       Example output 1 : 
+                        WhoPaid : Thomas Jhon
+                        Amount :  52  
+                        Currency :  USD
+                        ConversionRate : 83 
+                        Splittype :  equal
+
+                         Example output 2 : 
+                        WhoPaid : Thomas Jhon
+                        Amount :  52  
+                        Currency :  USD
+                        ConversionRate : 83 
+                        Splittype :  percentage",
+                        SplitDetails:{
+                        Thomas Jhon: 20%,
+                        Mathew : 20%,
+                        Jerry : 30%,
+                        Adam : 30%
+                    }
+  
+
+
+                        `;
+
+    fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: 'gpt-4',  // Specify the GPT model
+            messages: [
+                { role: 'system', content: 'You are a helpful assistant.' },
+                { role: 'user', content: prompt }
+            ],
+            max_tokens: 200,
+            temperature: 0.0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const billDetails = data.choices[0].message.content.trim();
+        console.log("Extracted Bill Data:", billDetails);
+        try {
+            const billData = JSON.parse(billDetails);  // Parse the JSON response
+            // Validate if all required fields are present
+            if (validateBillData(billData)) {
+                createBillFromVoiceInput(billData);  // Pass the data to a function to create a bill
+            } else {
+                alert("Incomplete bill details. Please try again.");
+            }
+        } catch (error) {
+            console.error("Error parsing JSON:", error);
+            alert("Failed to parse bill details. Please try again.");
+        }
+    })
+    .catch(error => {
+        console.error("Error in OpenAI API:", error);
+    });
+}
+
+
+// Function to validate extracted bill data
+// Function to validate extracted bill data
+// Function to validate extracted bill data
+function validateBillData(billData) {
+    // Check if required fields are present
+    if (!billData.WhoPaid || !billData.Amount || !billData.Currency || !billData.ConversionRate || !billData.SplitType) {
+        return false;  // If any of these required fields are missing, return false
+    }
+
+    // Normalize the SplitType (handle "even" as a valid value for "equal")
+    const normalizedSplitType = billData.SplitType.toLowerCase();
+
+    // If the split type is "equal" or "even", no need to check for percentage details
+    if (normalizedSplitType === 'equal' || normalizedSplitType === 'even') {
+        return true;  // Everything required for an equal split is present
+    }
+
+    // If the split type is "percentage", check for SplitDetails
+    if (normalizedSplitType === 'percentage') {
+        if (!billData.SplitDetails || Object.keys(billData.SplitDetails).length === 0) {
+            return false;  // If percentage split details are missing, return false
+        }
+        return true;  // All necessary percentage split details are present
+    }
+
+    return false;  // If the split type is neither "equal"/"even" nor "percentage", return false
+}
+
+function normalizeName(name) {
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
+// Function to clear all input fields in the form
+function clearAllFields() {
+    // Clear text inputs, number inputs, and dropdowns
+    document.getElementById('whoPaid').selectedIndex = 0;  // Reset the whoPaid dropdown
+    document.getElementById('amount').value = '';  // Clear the amount field
+    document.getElementById('currency').value = '';  // Clear the currency field
+    document.getElementById('conversionRate').value = '';  // Clear the conversion rate field
+
+    // Clear dynamically generated percentage split fields
+    const owesFieldsDiv = document.getElementById('owesFields');
+    owesFieldsDiv.innerHTML = '';  // Remove all dynamically generated percentage fields
+
+    // Optional: Clear other fields if needed
+    // You can add more fields to clear if necessary
+}
+
+// Attach the clearAllFields function to the clear button
+document.getElementById('clearButton').addEventListener('click', clearAllFields);
+
+
+// Function to create a bill from the voice input data and calculate the split
+function createBillFromVoiceInput(billData) {
+    // Normalize the name for "Who Paid" (capitalize first letter only)
+    const normalizedWhoPaid = normalizeName(billData.WhoPaid);
+
+    // Get the list of friends in the trip from local storage
+    const tripData = getLocalStorage('tripData');
+    const normalizedFriends = tripData.friends.map(friend => normalizeName(friend));  // Normalize all friend names
+
+    // Check if the person who paid is in the friends list
+    if (!normalizedFriends.includes(normalizedWhoPaid)) {
+        alert(`The person who paid (${normalizedWhoPaid}) is not part of the trip. Please correct the bill.`);
+        return;
+    }
+
+    // Populate the "Who Paid" dropdown
+    const whoPaidDropdown = document.getElementById('whoPaid');
+    let optionFound = false;
+
+    // Iterate through the options in the dropdown and select the one matching `WhoPaid`
+    for (let i = 0; i < whoPaidDropdown.options.length; i++) {
+        let optionValue = normalizeName(whoPaidDropdown.options[i].value);  // Normalize the option value
+        if (optionValue === normalizedWhoPaid) {
+            whoPaidDropdown.selectedIndex = i;  // Set the selected option
+            optionFound = true;
+            break;
+        }
+    }
+
+    // If no matching option was found, alert the user
+    if (!optionFound) {
+        alert(`The person who paid (${normalizedWhoPaid}) was not found in the dropdown. Please select manually.`);
+    }
+
+    // Calculate the total amount in INR
+    const totalINR = billData.Amount * billData.ConversionRate;
+
+    let splitDetails = {};  // Object to store split amounts
+
+    // Check the SplitType and calculate the split accordingly
+    if (billData.SplitType === 'percentage' && billData.SplitDetails) {
+        // Check if all friends in SplitDetails exist in the trip's friends list
+        let invalidFriends = [];
+        Object.keys(billData.SplitDetails).forEach(friend => {
+            const normalizedFriend = normalizeName(friend);
+
+            // If the friend is not in the trip's friend list, mark them as invalid
+            if (!normalizedFriends.includes(normalizedFriend)) {
+                invalidFriends.push(normalizedFriend);
+            }
+        });
+
+        // If any invalid friends are detected, reject the bill
+        if (invalidFriends.length > 0) {
+            alert(`The following friend(s) are not part of the trip: ${invalidFriends.join(', ')}. Please correct the bill.`);
+            return;
+        }
+
+        // Calculate the percentage split for each valid friend
+        Object.keys(billData.SplitDetails).forEach(friend => {
+            const normalizedFriend = normalizeName(friend);
+            const percentageValue = typeof billData.SplitDetails[friend] === 'string'
+                ? parseInt(billData.SplitDetails[friend].replace('%', ''))  // If string, strip `%`
+                : billData.SplitDetails[friend];  // If already numeric
+
+            // Calculate the amount owed by each friend in INR
+            const amountOwed = (totalINR * percentageValue) / 100;
+            splitDetails[normalizedFriend] = amountOwed;
+        });
+    } else {
+        // If no percentage split, perform equal split
+        const splitPerPerson = totalINR / normalizedFriends.length;
+        normalizedFriends.forEach(friend => {
+            splitDetails[friend] = splitPerPerson;
+        });
+    }
+
+    // Generate bill details for user confirmation
+    let billDetails = `Bill Summary:\n`;
+    billDetails += `Who Paid: ${normalizedWhoPaid}\n`;
+    billDetails += `Amount: ${billData.Amount} ${billData.Currency} (₹${totalINR.toFixed(2)} in INR)\n`;
+    billDetails += `Conversion Rate: 1 ${billData.Currency} = ₹${billData.ConversionRate}\n`;
+    billDetails += `Split Details:\n`;
+
+    Object.keys(splitDetails).forEach(friend => {
+        billDetails += `${friend} owes: ₹${splitDetails[friend].toFixed(2)}\n`;
+    });
+
+    // Prompt the user to confirm the bill details
+    if (confirm(billDetails + '\nDo you want to add this bill?')) {
+        // If confirmed, add the bill to the trip data
+        const newBill = {
+            who_paid: normalizedWhoPaid,
+            amount: billData.Amount,
+            currency: billData.Currency,
+            conversion_rate_to_inr: billData.ConversionRate,
+            total_inr: totalINR,
+            who_owes: splitDetails
+        };
+
+        tripData.bills.push(newBill);  // Add the bill to the stored trip data
+        setLocalStorage('tripData', tripData);  // Save the updated trip data
+        alert('Bill has been added successfully!');
+    } else {
+        alert('Bill addition canceled.');
+    }
 }
